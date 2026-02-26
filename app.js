@@ -18,9 +18,9 @@ const passwordInput = document.getElementById("login-password");
 const dashClients = document.getElementById("dash-clients");
 const dashProspect = document.getElementById("dash-prospect");
 const dashNextAppointments = document.getElementById("dash-next-appointments");
-const dashTasks = document.getElementById("dash-tasks");
+const dashTasks = document.getElementById("dash-tasks"); // lo useremo per contare eventi / attività
 
-// Form e liste
+// Form e liste clienti
 const clientForm = document.getElementById("client-form");
 const clientName = document.getElementById("client-name");
 const clientEmail = document.getElementById("client-email");
@@ -30,6 +30,7 @@ const clientNotes = document.getElementById("client-notes");
 const clientList = document.getElementById("client-list");
 const searchClient = document.getElementById("search-client");
 
+// Appuntamenti
 const appointmentForm = document.getElementById("appointment-form");
 const appointmentClient = document.getElementById("appointment-client");
 const appointmentDatetime = document.getElementById("appointment-datetime");
@@ -37,22 +38,24 @@ const appointmentSubject = document.getElementById("appointment-subject");
 const appointmentNotes = document.getElementById("appointment-notes");
 const appointmentList = document.getElementById("appointment-list");
 
+// Task (useremo activities più avanti, per ora solo contatore)
 const taskForm = document.getElementById("task-form");
 const taskTitle = document.getElementById("task-title");
 const taskDeadline = document.getElementById("task-deadline");
 const taskClient = document.getElementById("task-client");
 const taskList = document.getElementById("task-list");
 
-// Kanban colonne
+// Kanban colonne (deals)
 const kanbanNuovo = document.getElementById("kanban-nuovo");
 const kanbanValutazione = document.getElementById("kanban-valutazione");
 const kanbanTrattativa = document.getElementById("kanban-trattativa");
 const kanbanChiuso = document.getElementById("kanban-chiuso");
 
 // Stato in memoria
-let clientsCache = [];
-let appointmentsCache = [];
-let tasksCache = [];
+let contactsCache = [];
+let dealsCache = [];
+let calendarCache = [];
+let tasksCache = []; // per ora vuoto
 
 // ====================== AUTENTICAZIONE ======================
 
@@ -66,7 +69,7 @@ async function handleLogin() {
     return;
   }
 
-  const { data, error } = await supabase.auth.signInWithPassword({
+  const { error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
@@ -91,7 +94,7 @@ async function handleSignup() {
     return;
   }
 
-  const { data, error } = await supabase.auth.signUp({
+  const { error } = await supabase.auth.signUp({
     email,
     password,
   });
@@ -123,40 +126,42 @@ async function checkSession() {
   }
 }
 
-// ====================== CRUD CLIENTI ======================
-// Tabelle attese:
-// clients: id, name, email, phone, type, notes, stage ("nuovo", "valutazione", "trattativa", "chiuso")
+// ====================== CONTATTI (contacts) ======================
+// contacts: id, name, company, email, phone, status, value, ...
 
-async function loadClients() {
+async function loadContacts() {
   const { data, error } = await supabase
-    .from("clients")
+    .from("contacts")
     .select("*")
     .order("name", { ascending: true });
 
   if (error) {
-    console.error("Errore caricamento clients:", error);
+    console.error("Errore caricamento contacts:", error);
     return;
   }
 
-  clientsCache = data || [];
-  renderClients();
+  contactsCache = data || [];
+  renderContacts();
   fillClientSelects();
   updateDashboard();
-  renderKanban();
 }
 
-function renderClients() {
+function renderContacts() {
   const term = (searchClient.value || "").toLowerCase();
   clientList.innerHTML = "";
 
-  clientsCache
+  contactsCache
     .filter((c) => {
-      const s = `${c.name || ""} ${c.email || ""} ${c.phone || ""}`.toLowerCase();
+      const s = `${c.name || ""} ${c.email || ""} ${c.phone || ""} ${
+        c.company || ""
+      }`.toLowerCase();
       return s.includes(term);
     })
     .forEach((c) => {
       const li = document.createElement("li");
-      li.textContent = `${c.name} (${c.type || "?"}) – ${c.email || ""}`;
+      const status = c.status || "";
+      const value = c.value || "";
+      li.textContent = `${c.name} (${status}) – ${c.email || ""} – ${value}`;
       clientList.appendChild(li);
     });
 }
@@ -165,7 +170,7 @@ function fillClientSelects() {
   appointmentClient.innerHTML = "";
   taskClient.innerHTML = '<option value="">Nessuno</option>';
 
-  clientsCache.forEach((c) => {
+  contactsCache.forEach((c) => {
     const opt1 = document.createElement("option");
     opt1.value = c.id;
     opt1.textContent = c.name;
@@ -178,140 +183,46 @@ function fillClientSelects() {
   });
 }
 
-async function saveClient(e) {
+async function saveContact(e) {
   e.preventDefault();
 
   const payload = {
     name: clientName.value.trim(),
     email: clientEmail.value.trim() || null,
     phone: clientPhone.value.trim() || null,
-    type: clientType.value,
-    notes: clientNotes.value.trim() || null,
-    stage: "nuovo",
+    status: clientType.value === "cliente" ? "hot" : "warm", // mappiamo tipo → status
+    value: null,
+    company: null,
   };
 
-  const { data, error } = await supabase.from("clients").insert(payload).select();
+  const { error } = await supabase.from("contacts").insert(payload);
 
   if (error) {
-    alert("Errore salvataggio cliente: " + error.message);
+    alert("Errore salvataggio contatto: " + error.message);
     return;
   }
 
   clientForm.reset();
-  await loadClients();
+  await loadContacts();
 }
 
-// ====================== APPUNTAMENTI ======================
-// appointments: id, client_id, datetime, subject, notes
+// ====================== DEALS → KANBAN ======================
+// deals: id, status (hot/warm/cold), value, tags[], created_by, created_at, updated_at
 
-async function loadAppointments() {
+async function loadDeals() {
   const { data, error } = await supabase
-    .from("appointments")
-    .select("*, clients(name)")
-    .order("datetime", { ascending: true });
+    .from("deals")
+    .select("*")
+    .order("created_at", { ascending: true });
 
   if (error) {
-    console.error("Errore appointments:", error);
+    console.error("Errore caricamento deals:", error);
     return;
   }
 
-  appointmentsCache = data || [];
-  renderAppointments();
-  updateDashboard();
+  dealsCache = data || [];
+  renderKanban();
 }
-
-function renderAppointments() {
-  appointmentList.innerHTML = "";
-
-  appointmentsCache.forEach((a) => {
-    const li = document.createElement("li");
-    const date = a.datetime ? new Date(a.datetime) : null;
-    const dateStr = date ? date.toLocaleString("it-IT") : "";
-    const name = a.clients?.name || "Senza nome";
-
-    li.textContent = `${dateStr} – ${name} – ${a.subject || ""}`;
-    appointmentList.appendChild(li);
-  });
-}
-
-async function saveAppointment(e) {
-  e.preventDefault();
-
-  const payload = {
-    client_id: appointmentClient.value || null,
-    datetime: appointmentDatetime.value || null,
-    subject: appointmentSubject.value.trim(),
-    notes: appointmentNotes.value.trim() || null,
-  };
-
-  const { data, error } = await supabase
-    .from("appointments")
-    .insert(payload)
-    .select();
-
-  if (error) {
-    alert("Errore salvataggio appuntamento: " + error.message);
-    return;
-  }
-
-  appointmentForm.reset();
-  await loadAppointments();
-}
-
-// ====================== TASK / ATTIVITÀ ======================
-// tasks: id, title, deadline, client_id, done (boolean)
-
-async function loadTasks() {
-  const { data, error } = await supabase
-    .from("tasks")
-    .select("*, clients(name)")
-    .order("deadline", { ascending: true });
-
-  if (error) {
-    console.error("Errore tasks:", error);
-    return;
-  }
-
-  tasksCache = data || [];
-  renderTasks();
-  updateDashboard();
-}
-
-function renderTasks() {
-  taskList.innerHTML = "";
-
-  tasksCache.forEach((t) => {
-    const li = document.createElement("li");
-    const dateStr = t.deadline ? new Date(t.deadline).toLocaleDateString("it-IT") : "";
-    const name = t.clients?.name ? ` – ${t.clients.name}` : "";
-
-    li.textContent = `${dateStr} – ${t.title}${name}`;
-    taskList.appendChild(li);
-  });
-}
-
-async function saveTask(e) {
-  e.preventDefault();
-
-  const payload = {
-    title: taskTitle.value.trim(),
-    deadline: taskDeadline.value || null,
-    client_id: taskClient.value || null,
-    done: false,
-  };
-
-  const { data, error } = await supabase.from("tasks").insert(payload).select();
-
-  if (error) {
-    alert("Errore salvataggio attività: " + error.message);
-    return;
-  }
-
-  taskForm.reset();
-  await loadTasks();
-}
-
-// ====================== KANBAN PIPELINE ======================
 
 function renderKanban() {
   kanbanNuovo.innerHTML = "";
@@ -319,16 +230,26 @@ function renderKanban() {
   kanbanTrattativa.innerHTML = "";
   kanbanChiuso.innerHTML = "";
 
-  clientsCache.forEach((c) => {
+  dealsCache.forEach((d) => {
     const card = document.createElement("div");
     card.className = "kanban-card";
-    card.textContent = c.name;
+    const value = d.value || "";
+    card.textContent = `${d.status || ""} – ${value}`;
 
-    switch (c.stage) {
-      case "valutazione":
+    // Mappiamo status alla colonna
+    // ipotesi:
+    // cold  -> "Nuovo contatto"
+    // warm  -> "In valutazione"
+    // hot   -> "In trattativa"
+    // chiuso (se esistesse) -> "Chiuso"
+    switch ((d.status || "").toLowerCase()) {
+      case "cold":
+        kanbanNuovo.appendChild(card);
+        break;
+      case "warm":
         kanbanValutazione.appendChild(card);
         break;
-      case "trattativa":
+      case "hot":
         kanbanTrattativa.appendChild(card);
         break;
       case "chiuso":
@@ -340,19 +261,120 @@ function renderKanban() {
   });
 }
 
+// ====================== CALENDAR_EVENTS → AGENDA ======================
+// calendar_events: id, title, description, event_type, contact_id, deal_id,
+// start_time, end_time, location, created_by, created_at, updated_at
+
+async function loadCalendarEvents() {
+  const { data, error } = await supabase
+    .from("calendar_events")
+    .select("*")
+    .order("start_time", { ascending: true });
+
+  if (error) {
+    console.error("Errore caricamento calendar_events:", error);
+    return;
+  }
+
+  calendarCache = data || [];
+  renderAppointments();
+  updateDashboard();
+}
+
+function renderAppointments() {
+  appointmentList.innerHTML = "";
+
+  calendarCache.forEach((ev) => {
+    const date = ev.start_time ? new Date(ev.start_time) : null;
+    const dateStr = date ? date.toLocaleString("it-IT") : "";
+    const title = ev.title || "";
+    const location = ev.location ? ` – ${ev.location}` : "";
+
+    const li = document.createElement("li");
+    li.textContent = `${dateStr} – ${title}${location}`;
+    appointmentList.appendChild(li);
+  });
+}
+
+async function saveAppointment(e) {
+  e.preventDefault();
+
+  const payload = {
+    title: appointmentSubject.value.trim(),
+    description: appointmentNotes.value.trim() || null,
+    event_type: "meeting",
+    contact_id: appointmentClient.value || null,
+    deal_id: null,
+    start_time: appointmentDatetime.value || null,
+    end_time: null,
+    location: null,
+  };
+
+  const { error } = await supabase.from("calendar_events").insert(payload);
+
+  if (error) {
+    alert("Errore salvataggio appuntamento: " + error.message);
+    return;
+  }
+
+  appointmentForm.reset();
+  await loadCalendarEvents();
+}
+
+// ====================== TASK / ATTIVITÀ ======================
+// Per ora usiamo solo il form come "memo locale" (non salva su DB)
+
+function renderTasks() {
+  taskList.innerHTML = "";
+  tasksCache.forEach((t) => {
+    const li = document.createElement("li");
+    const dateStr = t.deadline ? new Date(t.deadline).toLocaleDateString("it-IT") : "";
+    const name = t.clientName ? ` – ${t.clientName}` : "";
+    li.textContent = `${dateStr} – ${t.title}${name}`;
+    taskList.appendChild(li);
+  });
+}
+
+function saveTaskLocal(e) {
+  e.preventDefault();
+  const clientId = taskClient.value || null;
+  const clientName = clientId
+    ? (contactsCache.find((c) => String(c.id) === String(clientId))?.name || "")
+    : "";
+
+  tasksCache.push({
+    title: taskTitle.value.trim(),
+    deadline: taskDeadline.value || null,
+    clientId,
+    clientName,
+  });
+
+  taskForm.reset();
+  renderTasks();
+  updateDashboard();
+}
+
 // ====================== DASHBOARD ======================
 
 function updateDashboard() {
-  const clientsCount = clientsCache.filter((c) => c.type === "cliente").length;
-  const prospectCount = clientsCache.filter((c) => c.type === "prospect").length;
+  // Clienti = status hot, Prospect = warm + cold
+  const clientsCount = contactsCache.filter((c) => c.status === "hot").length;
+  const prospectCount = contactsCache.filter((c) =>
+    ["warm", "cold"].includes((c.status || "").toLowerCase())
+  ).length;
 
   dashClients.textContent = clientsCount;
   dashProspect.textContent = prospectCount;
-  dashTasks.textContent = tasksCache.length;
 
+  // Appuntamenti futuri
   const now = new Date();
-  const upcoming = appointmentsCache.filter((a) => a.datetime && new Date(a.datetime) >= now);
+  const upcoming = calendarCache.filter(
+    (ev) => ev.start_time && new Date(ev.start_time) >= now
+  );
   dashNextAppointments.textContent = upcoming.length;
+
+  // Attività = tasks locali creati dal form
+  dashTasks.textContent = tasksCache.length;
 }
 
 // ====================== EVENT LISTENERS E AVVIO ======================
@@ -372,15 +394,15 @@ logoutBtn.addEventListener("click", (e) => {
   handleLogout();
 });
 
-clientForm.addEventListener("submit", saveClient);
+clientForm.addEventListener("submit", saveContact);
 appointmentForm.addEventListener("submit", saveAppointment);
-taskForm.addEventListener("submit", saveTask);
-searchClient.addEventListener("input", renderClients);
+taskForm.addEventListener("submit", saveTaskLocal);
+searchClient.addEventListener("input", renderContacts);
 
 async function loadAllData() {
-  await loadClients();
-  await loadAppointments();
-  await loadTasks();
+  await loadContacts();
+  await loadDeals();
+  await loadCalendarEvents();
 }
 
 checkSession();
