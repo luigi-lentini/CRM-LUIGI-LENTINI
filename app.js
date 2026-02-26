@@ -7,6 +7,9 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // ELEMENTI BASE
 const loginScreen = document.getElementById("login-screen");
 const appScreen = document.getElementById("app-screen");
+// All'avvio mostra il login, nascondi app
+loginScreen.classList.remove("hidden");
+appScreen.classList.add("hidden");
 const loginBtn = document.getElementById("login-btn");
 const signupBtn = document.getElementById("signup-btn");
 const logoutBtn = document.getElementById("logout-btn");
@@ -405,4 +408,5 @@ async function loadAllData() {
   await loadCalendarEvents();
 }
 
-checkSession();
+// checkSession(); // per ora disattivato, forziamo login manuale
+
