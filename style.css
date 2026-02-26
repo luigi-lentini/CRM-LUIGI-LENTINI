@@ -1,0 +1,84 @@
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #f3f5f9;
+  color: #0d2a4d;
+}
+
+.hidden { display: none; }
+
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, #0d2a4d, #1f5fbf);
+  color: white;
+}
+
+.login-container input {
+  width: 260px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: none;
+  margin-bottom: 6px;
+}
+
+.login-container button {
+  width: 260px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+.secondary {
+  background: white;
+  color: #0d2a4d;
+}
+
+.error { color: #ffdddd; min-height: 20px; }
+
+.brand-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  background: white;
+  border-bottom: 1px solid #dde3f0;
+}
+
+.main-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  padding: 16px;
+}
+
+.panel {
+  background: white;
+  border-radius: 10px;
+  padding: 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+}
+
+.kanban {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 8px;
+}
+
+.kanban-column {
+  background: #f7f8fc;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+@media (max-width: 800px) {
+  .kanban {
+    grid-template-columns: 1fr;
+  }
+}
