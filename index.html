@@ -4,13 +4,10 @@
   <meta charset="UTF-8" />
   <title>CRM LENTINI – Supabase Edition</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- STILI -->
   <link rel="stylesheet" href="style.css" />
-
-  <!-- SUPABASE -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
+
 <body>
 
 <!-- LOGIN SCREEN -->
@@ -104,15 +101,9 @@
     <section class="panel">
       <h2>Nuovo Cliente / Prospect</h2>
       <form id="client-form">
-        <label>Nome
-          <input id="client-name" required />
-        </label>
-        <label>Email
-          <input id="client-email" type="email" />
-        </label>
-        <label>Telefono
-          <input id="client-phone" />
-        </label>
+        <label>Nome <input id="client-name" required></label>
+        <label>Email <input id="client-email"></label>
+        <label>Telefono <input id="client-phone"></label>
         <label>Tipo
           <select id="client-type">
             <option value="cliente">Cliente</option>
@@ -177,7 +168,7 @@
   </main>
 </div>
 
-<!-- MODALE SCHEDA CLIENTE (per usi futuri) -->
+<!-- MODALE SCHEDA CLIENTE -->
 <div id="client-card-modal" class="modal hidden">
   <div class="modal-content">
     <h2 id="card-name"></h2>
@@ -218,7 +209,6 @@
   </div>
 </div>
 
-<!-- SCRIPT APP -->
 <script src="app.js"></script>
 </body>
 </html>
