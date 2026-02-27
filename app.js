@@ -7,9 +7,11 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // ELEMENTI BASE
 const loginScreen = document.getElementById("login-screen");
 const appScreen = document.getElementById("app-screen");
+
 // All'avvio mostra il login, nascondi app
 loginScreen.classList.remove("hidden");
 appScreen.classList.add("hidden");
+
 const loginBtn = document.getElementById("login-btn");
 const signupBtn = document.getElementById("signup-btn");
 const logoutBtn = document.getElementById("logout-btn");
@@ -21,7 +23,7 @@ const passwordInput = document.getElementById("login-password");
 const dashClients = document.getElementById("dash-clients");
 const dashProspect = document.getElementById("dash-prospect");
 const dashNextAppointments = document.getElementById("dash-next-appointments");
-const dashTasks = document.getElementById("dash-tasks"); // lo useremo per contare eventi / attività
+const dashTasks = document.getElementById("dash-tasks");
 
 // Form e liste clienti
 const clientForm = document.getElementById("client-form");
@@ -41,7 +43,7 @@ const appointmentSubject = document.getElementById("appointment-subject");
 const appointmentNotes = document.getElementById("appointment-notes");
 const appointmentList = document.getElementById("appointment-list");
 
-// Task (useremo activities più avanti, per ora solo contatore)
+// Task (per ora solo locale)
 const taskForm = document.getElementById("task-form");
 const taskTitle = document.getElementById("task-title");
 const taskDeadline = document.getElementById("task-deadline");
@@ -58,9 +60,9 @@ const kanbanChiuso = document.getElementById("kanban-chiuso");
 let contactsCache = [];
 let dealsCache = [];
 let calendarCache = [];
-let tasksCache = []; // per ora vuoto
+let tasksCache = [];
 
-// ====================== AUTENTICAZIONE ======================
+// ============ AUTENTICAZIONE ============
 
 async function handleLogin() {
   loginError.textContent = "";
@@ -72,10 +74,7 @@ async function handleLogin() {
     return;
   }
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
     loginError.textContent = error.message || "Errore di login.";
@@ -97,10 +96,7 @@ async function handleSignup() {
     return;
   }
 
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-  });
+  const { error } = await supabase.auth.signUp({ email, password });
 
   if (error) {
     loginError.textContent = error.message || "Errore in registrazione.";
@@ -116,20 +112,7 @@ async function handleLogout() {
   loginScreen.classList.remove("hidden");
 }
 
-// Verifica sessione al load
-async function checkSession() {
-  const { data } = await supabase.auth.getSession();
-  if (data.session) {
-    loginScreen.classList.add("hidden");
-    appScreen.classList.remove("hidden");
-    await loadAllData();
-  } else {
-    loginScreen.classList.remove("hidden");
-    appScreen.classList.add("hidden");
-  }
-}
-
-// ====================== CONTATTI (contacts) ======================
+// ============ CONTATTI (contacts) ============
 // contacts: id, name, company, email, phone, status, value, ...
 
 async function loadContacts() {
@@ -193,7 +176,7 @@ async function saveContact(e) {
     name: clientName.value.trim(),
     email: clientEmail.value.trim() || null,
     phone: clientPhone.value.trim() || null,
-    status: clientType.value === "cliente" ? "hot" : "warm", // mappiamo tipo → status
+    status: clientType.value === "cliente" ? "hot" : "warm",
     value: null,
     company: null,
   };
@@ -209,8 +192,7 @@ async function saveContact(e) {
   await loadContacts();
 }
 
-// ====================== DEALS → KANBAN ======================
-// deals: id, status (hot/warm/cold), value, tags[], created_by, created_at, updated_at
+// ============ DEALS → KANBAN ============
 
 async function loadDeals() {
   const { data, error } = await supabase
@@ -239,12 +221,6 @@ function renderKanban() {
     const value = d.value || "";
     card.textContent = `${d.status || ""} – ${value}`;
 
-    // Mappiamo status alla colonna
-    // ipotesi:
-    // cold  -> "Nuovo contatto"
-    // warm  -> "In valutazione"
-    // hot   -> "In trattativa"
-    // chiuso (se esistesse) -> "Chiuso"
     switch ((d.status || "").toLowerCase()) {
       case "cold":
         kanbanNuovo.appendChild(card);
@@ -264,9 +240,7 @@ function renderKanban() {
   });
 }
 
-// ====================== CALENDAR_EVENTS → AGENDA ======================
-// calendar_events: id, title, description, event_type, contact_id, deal_id,
-// start_time, end_time, location, created_by, created_at, updated_at
+// ============ CALENDAR_EVENTS → AGENDA ============
 
 async function loadCalendarEvents() {
   const { data, error } = await supabase
@@ -324,8 +298,7 @@ async function saveAppointment(e) {
   await loadCalendarEvents();
 }
 
-// ====================== TASK / ATTIVITÀ ======================
-// Per ora usiamo solo il form come "memo locale" (non salva su DB)
+// ============ TASK LOCALI ============
 
 function renderTasks() {
   taskList.innerHTML = "";
@@ -357,10 +330,9 @@ function saveTaskLocal(e) {
   updateDashboard();
 }
 
-// ====================== DASHBOARD ======================
+// ============ DASHBOARD ============
 
 function updateDashboard() {
-  // Clienti = status hot, Prospect = warm + cold
   const clientsCount = contactsCache.filter((c) => c.status === "hot").length;
   const prospectCount = contactsCache.filter((c) =>
     ["warm", "cold"].includes((c.status || "").toLowerCase())
@@ -369,18 +341,16 @@ function updateDashboard() {
   dashClients.textContent = clientsCount;
   dashProspect.textContent = prospectCount;
 
-  // Appuntamenti futuri
   const now = new Date();
   const upcoming = calendarCache.filter(
     (ev) => ev.start_time && new Date(ev.start_time) >= now
   );
   dashNextAppointments.textContent = upcoming.length;
 
-  // Attività = tasks locali creati dal form
   dashTasks.textContent = tasksCache.length;
 }
 
-// ====================== EVENT LISTENERS E AVVIO ======================
+// ============ EVENT LISTENERS & AVVIO ============
 
 loginBtn.addEventListener("click", (e) => {
   e.preventDefault();
@@ -407,7 +377,3 @@ async function loadAllData() {
   await loadDeals();
   await loadCalendarEvents();
 }
-
-// checkSession(); // per ora disattivato, forziamo login manuale
-const SUPABASE_URL = "...";
-const SUPABASE_KEY = "...";
