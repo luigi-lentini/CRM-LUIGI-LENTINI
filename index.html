@@ -4,30 +4,33 @@
   <meta charset="UTF-8" />
   <title>CRM LENTINI – Supabase Edition</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<head>
-  <meta charset="UTF-8" />
-  <title>CRM LENTINI – Supabase Edition</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- STILI -->
   <link rel="stylesheet" href="style.css" />
 
   <!-- SUPABASE -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
 
+<!-- LOGIN SCREEN -->
 <div id="login-screen" class="login-container">
   <h1 class="login-title">CRM LENTINI</h1>
   <p class="login-subtitle">Accedi al tuo account</p>
+
   <input id="login-email" type="email" placeholder="Email" />
   <input id="login-password" type="password" placeholder="Password" />
+
   <button id="login-btn">Accedi</button>
   <button id="signup-btn" class="secondary">Registrati</button>
+
   <p id="login-error" class="error"></p>
 </div>
 
+<!-- APP SCREEN -->
 <div id="app-screen" class="hidden">
+
+  <!-- HEADER -->
   <header class="brand-header">
     <div class="logo-area">
       <svg width="48" height="48">
@@ -38,13 +41,17 @@
         <div class="logo-sub">CRM Cloud Professionale</div>
       </div>
     </div>
+
     <div class="header-actions">
       <button id="toggle-dark" class="dark-btn">🌙</button>
       <button id="logout-btn" class="logout-btn">Logout</button>
     </div>
   </header>
 
+  <!-- MAIN GRID -->
   <main class="main-grid">
+
+    <!-- DASHBOARD -->
     <section class="panel dashboard">
       <h2>Dashboard</h2>
       <div class="dash-grid">
@@ -67,6 +74,7 @@
       </div>
     </section>
 
+    <!-- PIPELINE -->
     <section class="panel pipeline">
       <h2>Pipeline Commerciale</h2>
       <div class="kanban">
@@ -74,14 +82,17 @@
           <h3>Nuovo contatto</h3>
           <div class="kanban-list" id="kanban-nuovo"></div>
         </div>
+
         <div class="kanban-column" data-stage="valutazione">
           <h3>In valutazione</h3>
           <div class="kanban-list" id="kanban-valutazione"></div>
         </div>
+
         <div class="kanban-column" data-stage="trattativa">
           <h3>In trattativa</h3>
           <div class="kanban-list" id="kanban-trattativa"></div>
         </div>
+
         <div class="kanban-column" data-stage="chiuso">
           <h3>Chiuso / Convertito</h3>
           <div class="kanban-list" id="kanban-chiuso"></div>
@@ -89,12 +100,19 @@
       </div>
     </section>
 
+    <!-- NUOVO CLIENTE -->
     <section class="panel">
       <h2>Nuovo Cliente / Prospect</h2>
       <form id="client-form">
-        <label>Nome <input id="client-name" required></label>
-        <label>Email <input id="client-email"></label>
-        <label>Telefono <input id="client-phone"></label>
+        <label>Nome
+          <input id="client-name" required />
+        </label>
+        <label>Email
+          <input id="client-email" type="email" />
+        </label>
+        <label>Telefono
+          <input id="client-phone" />
+        </label>
         <label>Tipo
           <select id="client-type">
             <option value="cliente">Cliente</option>
@@ -108,12 +126,14 @@
       </form>
     </section>
 
+    <!-- LISTA CLIENTI -->
     <section class="panel">
       <h2>Clienti e Prospect</h2>
       <input type="text" id="search-client" placeholder="Cerca..." />
       <ul id="client-list"></ul>
     </section>
 
+    <!-- AGENDA -->
     <section class="panel">
       <h2>Agenda Appuntamenti</h2>
       <form id="appointment-form">
@@ -134,6 +154,7 @@
       <ul id="appointment-list"></ul>
     </section>
 
+    <!-- ATTIVITÀ -->
     <section class="panel">
       <h2>Attività Settimanali</h2>
       <form id="task-form">
@@ -156,6 +177,7 @@
   </main>
 </div>
 
+<!-- MODALE SCHEDA CLIENTE (per usi futuri) -->
 <div id="client-card-modal" class="modal hidden">
   <div class="modal-content">
     <h2 id="card-name"></h2>
@@ -196,6 +218,7 @@
   </div>
 </div>
 
+<!-- SCRIPT APP -->
 <script src="app.js"></script>
 </body>
 </html>
