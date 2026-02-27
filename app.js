@@ -409,6 +409,5 @@ async function loadAllData() {
 }
 
 // checkSession(); // per ora disattivato, forziamo login manuale
-const supabase = window.supabase.createClient(...).
-  
-
+const SUPABASE_URL = "...";
+const SUPABASE_KEY = "...";
